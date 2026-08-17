@@ -1,0 +1,22 @@
+{
+  "name": "whatsapp-status-optimize",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Prepare photos for WhatsApp Status — client-side optimize and download.",
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w web",
+    "dev:web": "npm run dev -w web",
+    "dev:api": "npm run dev -w api",
+    "build": "npm run build -w web && npm run build -w api",
+    "build:web": "npm run build -w web",
+    "lint": "npm run lint -w web",
+    "typecheck": "npm run typecheck -w web && npm run typecheck -w api",
+    "test": "npm run test -w web"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
