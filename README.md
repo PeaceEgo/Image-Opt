@@ -48,6 +48,8 @@ gh repo create whatsapp-status-optimize --private --source=. --remote=origin --p
 
 Deploy `apps/web` to Vercel. Set the project **Root Directory** to `apps/web`.
 
+`apps/web/vercel.json` installs from the monorepo root so Linux native Tailwind/`lightningcss` binaries resolve on Vercel.
+
 ```bash
 npx vercel --cwd apps/web
 ```
