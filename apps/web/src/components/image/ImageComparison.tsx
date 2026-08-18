@@ -32,7 +32,7 @@ export function ImageComparison({ result }: ImageComparisonProps) {
   return (
     <div className="space-y-5">
       <p className="text-center text-sm text-muted">
-        At this size they look almost the same — that&apos;s intentional. The win
+        At this size they look almost the same that&apos;s intentional. The win
         is fewer pixels and a much smaller file for WhatsApp Status.
       </p>
 
