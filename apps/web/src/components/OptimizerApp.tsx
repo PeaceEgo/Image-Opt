@@ -2,12 +2,12 @@
 
 import { useEffect, useState } from "react";
 
-import { ImageMetadataDisplay } from "@/components/image/ImageMetadata";
 import { ImagePreview } from "@/components/image/ImagePreview";
 import { OptimizationProgress } from "@/components/optimizer/OptimizationProgress";
 import { OptimizationResultView } from "@/components/optimizer/OptimizationResult";
 import { Button } from "@/components/ui/button";
 import { ImageUploader } from "@/components/upload/ImageUploader";
+import { trackEvent } from "@/lib/analytics";
 import { getUserFacingError } from "@/lib/image/errors";
 import { processImage, revokeResultUrls } from "@/lib/image/optimize";
 import type { AppStatus, OptimizationResult } from "@/types/image";
@@ -53,6 +53,7 @@ export function OptimizerApp() {
       setPreviewUrl(null);
       setResult(next);
       setStatus("complete");
+      trackEvent("hd_optimize");
     } catch (caught) {
       URL.revokeObjectURL(url);
       setPreviewUrl(null);
@@ -84,11 +85,11 @@ export function OptimizerApp() {
         {status === "idle" ? (
           <section className="flex flex-1 flex-col justify-center py-8 sm:py-16">
             <h1 className="max-w-xl font-display text-[2.35rem] leading-[1.1] text-foreground sm:text-6xl">
-              Your photos deserve better.
+              Make your WhatsApp Status look better.
             </h1>
             <p className="mt-5 max-w-md text-lg leading-relaxed text-muted sm:text-xl">
-              Optimize your photos for WhatsApp Status and keep them looking
-              sharp.
+              Prepare a WhatsApp HD photo on your device, then share it straight
+              to WhatsApp.
             </p>
             <div className="mt-10">
               <ImageUploader
@@ -102,7 +103,7 @@ export function OptimizerApp() {
               </p>
             ) : (
               <p className="mt-6 text-center text-sm text-muted">
-                No uploads. No accounts. Just optimize and download.
+                No uploads. No accounts. Optimize, then share.
               </p>
             )}
           </section>
@@ -123,9 +124,6 @@ export function OptimizerApp() {
 
         {status === "complete" && result ? (
           <section className="py-6 sm:py-10">
-            <div className="mb-6">
-              <ImageMetadataDisplay image={result.original} />
-            </div>
             <OptimizationResultView result={result} onReset={reset} />
           </section>
         ) : null}
@@ -146,8 +144,8 @@ export function OptimizerApp() {
       </main>
 
       <footer className="px-5 py-6 text-center text-xs leading-relaxed text-muted sm:px-8">
-        Your photos stay on your device. We prepare them for a better result
-        after WhatsApp processes them — we cannot prevent WhatsApp compression.
+        Your photos stay on your device. We prepare them for WhatsApp Status —
+        we cannot prevent WhatsApp compression.
       </footer>
     </div>
   );

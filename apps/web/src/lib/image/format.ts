@@ -1,16 +1,46 @@
 import {
+  STATUS_LANDSCAPE_MAX_HEIGHT,
+  STATUS_LANDSCAPE_MAX_WIDTH,
   STATUS_MAX_HEIGHT,
   STATUS_MAX_WIDTH,
+  STATUS_SQUARE_MAX,
 } from "@/lib/image/constants";
 
+export type ImageOrientation = "portrait" | "landscape" | "square";
+
+export function getImageOrientation(
+  width: number,
+  height: number,
+): ImageOrientation {
+  if (width <= 0 || height <= 0) {
+    throw new Error("Image has invalid dimensions.");
+  }
+  if (width === height) return "square";
+  return height > width ? "portrait" : "landscape";
+}
+
+/**
+ * WhatsApp HD target: fit inside an orientation-aware Status box.
+ * Never upscales. Preserves aspect ratio (no crop).
+ */
 export function getTargetSize(
   width: number,
   height: number,
-  maxWidth = STATUS_MAX_WIDTH,
-  maxHeight = STATUS_MAX_HEIGHT,
-): { width: number; height: number } {
+): { width: number; height: number; orientation: ImageOrientation } {
   if (width <= 0 || height <= 0) {
     throw new Error("Image has invalid dimensions.");
+  }
+
+  const orientation = getImageOrientation(width, height);
+  let maxWidth = STATUS_MAX_WIDTH;
+  let maxHeight = STATUS_MAX_HEIGHT;
+
+  if (orientation === "landscape") {
+    maxWidth = STATUS_LANDSCAPE_MAX_WIDTH;
+    maxHeight = STATUS_LANDSCAPE_MAX_HEIGHT;
+  } else if (orientation === "square") {
+    maxWidth = STATUS_SQUARE_MAX;
+    maxHeight = STATUS_SQUARE_MAX;
   }
 
   const scale = Math.min(1, maxWidth / width, maxHeight / height);
@@ -18,6 +48,7 @@ export function getTargetSize(
   return {
     width: Math.max(1, Math.round(width * scale)),
     height: Math.max(1, Math.round(height * scale)),
+    orientation,
   };
 }
 
@@ -72,4 +103,24 @@ export function formatType(type: string, name?: string): string {
 
 export function formatDimensions(width: number, height: number): string {
   return `${width} × ${height}`;
+}
+
+/** Percent smaller vs original; null when not smaller. */
+export function getSizeReductionPercent(
+  originalBytes: number,
+  optimizedBytes: number,
+): number | null {
+  if (originalBytes <= 0 || optimizedBytes <= 0 || optimizedBytes >= originalBytes) {
+    return null;
+  }
+  return Math.round(((originalBytes - optimizedBytes) / originalBytes) * 100);
+}
+
+export function formatSizeReduction(
+  originalBytes: number,
+  optimizedBytes: number,
+): string | null {
+  const percent = getSizeReductionPercent(originalBytes, optimizedBytes);
+  if (percent === null) return null;
+  return `${percent}% smaller`;
 }

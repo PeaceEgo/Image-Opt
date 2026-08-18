@@ -12,6 +12,8 @@ export type OptimizationResult = {
   optimized: ImageMetadata;
   originalUrl: string;
   optimizedUrl: string;
+  /** Kept for native share without re-fetching the object URL. */
+  optimizedBlob: Blob;
 };
 
 export type AppStatus = "idle" | "reading" | "optimizing" | "complete" | "error";

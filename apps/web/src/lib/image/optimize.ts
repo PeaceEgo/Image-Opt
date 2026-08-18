@@ -1,6 +1,8 @@
 import { metadataFromFile } from "@/lib/image/analyze";
 import {
   JPEG_QUALITY,
+  JPEG_SOFT_QUALITY,
+  JPEG_SOFT_SIZE_BYTES,
   OPTIMIZED_FILENAME,
   PROCESS_TIMEOUT_MS,
 } from "@/lib/image/constants";
@@ -42,6 +44,14 @@ function canvasToJpeg(canvas: HTMLCanvasElement, quality: number): Promise<Blob>
   });
 }
 
+async function encodeWhatsAppHd(canvas: HTMLCanvasElement): Promise<Blob> {
+  let blob = await canvasToJpeg(canvas, JPEG_QUALITY);
+  if (blob.size > JPEG_SOFT_SIZE_BYTES) {
+    blob = await canvasToJpeg(canvas, JPEG_SOFT_QUALITY);
+  }
+  return blob;
+}
+
 export async function optimizeBitmap(
   bitmap: ImageBitmap,
 ): Promise<{ blob: Blob; width: number; height: number }> {
@@ -63,7 +73,7 @@ export async function optimizeBitmap(
   context.drawImage(bitmap, 0, 0, width, height);
 
   try {
-    const blob = await canvasToJpeg(canvas, JPEG_QUALITY);
+    const blob = await encodeWhatsAppHd(canvas);
     return { blob, width, height };
   } finally {
     canvas.width = 0;
@@ -104,6 +114,7 @@ export async function processImage(
         },
         originalUrl: URL.createObjectURL(file),
         optimizedUrl: URL.createObjectURL(blob),
+        optimizedBlob: blob,
       };
     } finally {
       bitmap.close();

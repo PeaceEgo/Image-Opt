@@ -4,7 +4,7 @@ type OptimizationProgressProps = {
 
 const copy = {
   reading: "Reading your photo...",
-  optimizing: "Optimizing your photo...",
+  optimizing: "Preparing WhatsApp HD...",
 } as const;
 
 export function OptimizationProgress({ stage }: OptimizationProgressProps) {

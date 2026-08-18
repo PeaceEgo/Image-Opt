@@ -4,16 +4,18 @@ Prepare photos for WhatsApp Status so they keep looking sharp after WhatsApp pro
 
 This does **not** prevent WhatsApp compression. It resizes and encodes images in the browser so they fit Status more cleanly.
 
-**Upload. Optimize. Download. Done.**
+**Upload → WhatsApp HD → Share (or Download).**
 
 ## Architecture
 
 Images never leave the device. There is no database, auth, or media upload API.
 
 ```
-apps/web   Next.js app — the product (Canvas optimizer)
+apps/web   Next.js app — Canvas WhatsApp HD optimizer + Web Share
 apps/api   Hono stub — health check only, not used by the upload flow
 ```
+
+Usage (visitors + events) is tracked with **Vercel Analytics**. Enable Web Analytics on the Vercel project, then open the Analytics tab for visitor counts and custom events (`hd_optimize`, `share_whatsapp`, `download`).
 
 ## Develop
 
