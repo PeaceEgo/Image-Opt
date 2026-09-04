@@ -27,8 +27,7 @@ export function VideoProgressView({ label, percent }: VideoProgressViewProps) {
 }
 
 export function videoProgressLabel(phase: string, percent: number): string {
-  if (phase === "loading_tools") return "Loading video tools…";
-  if (percent < 25) return "Preparing your video…";
+  if (phase === "preparing" || percent < 40) return "Uploading your video…";
   if (percent < 90) return "Optimizing your video…";
   return "Finishing up…";
 }

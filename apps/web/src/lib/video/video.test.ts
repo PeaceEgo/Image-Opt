@@ -5,10 +5,6 @@ import {
   STATUS_MAX_DURATION_SEC,
 } from "@/lib/video/constants";
 import { getVideoUserFacingError } from "@/lib/video/errors";
-import {
-  buildVideoEncodeArgs,
-  ffmpegLogsIndicateAudio,
-} from "@/lib/video/optimize";
 import { getVideoTargetSize } from "@/lib/video/target";
 import { isLikelyVideoFile, validateVideoFile } from "@/lib/video/validate";
 
@@ -106,49 +102,10 @@ describe("getVideoUserFacingError", () => {
       "We couldn’t prepare this video. Try a shorter clip.",
     );
   });
-});
 
-describe("ffmpegLogsIndicateAudio", () => {
-  it("detects audio streams from probe logs", () => {
-    expect(
-      ffmpegLogsIndicateAudio([
-        "Stream #0:0(und): Video: h264",
-        "Stream #0:1(und): Audio: aac, 44100 Hz",
-      ]),
-    ).toBe(true);
-    expect(
-      ffmpegLogsIndicateAudio(["Stream #0:0(und): Video: h264 (High)"]),
-    ).toBe(false);
-  });
-});
-
-describe("buildVideoEncodeArgs", () => {
-  it("includes AAC when audio is present", () => {
-    const args = buildVideoEncodeArgs({
-      inputName: "in.mp4",
-      outputName: "out.mp4",
-      start: 0,
-      duration: 10,
-      width: 1080,
-      height: 1920,
-      hasAudio: true,
-    });
-    expect(args).toContain("-c:a");
-    expect(args).toContain("aac");
-    expect(args).not.toContain("-an");
-  });
-
-  it("uses -an when audio is absent", () => {
-    const args = buildVideoEncodeArgs({
-      inputName: "in.mp4",
-      outputName: "out.mp4",
-      start: 0,
-      duration: 10,
-      width: 1080,
-      height: 1920,
-      hasAudio: false,
-    });
-    expect(args).toContain("-an");
-    expect(args).not.toContain("-c:a");
+  it("explains when the API is unreachable", () => {
+    expect(getVideoUserFacingError(new Error("API_UNAVAILABLE"))).toContain(
+      "unavailable",
+    );
   });
 });

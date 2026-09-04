@@ -9,6 +9,10 @@ export function getVideoUserFacingError(error: unknown): string {
     return "This video is too large to process on this device. Try a smaller video.";
   }
 
+  if (message === "API_UNAVAILABLE") {
+    return "Video preparation is temporarily unavailable. Please try again in a moment.";
+  }
+
   if (
     message === "DEVICE_LIMIT" ||
     message === "PROBE_FAILED" ||

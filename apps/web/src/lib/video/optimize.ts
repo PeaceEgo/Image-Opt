@@ -1,104 +1,28 @@
-import type { FFmpeg, LogEventCallback, ProgressEventCallback } from "@ffmpeg/ffmpeg";
 import {
   OPTIMIZED_VIDEO_FILENAME,
-  VIDEO_CRF,
-  VIDEO_PRESET,
 } from "@/lib/video/constants";
-import { getFFmpeg } from "@/lib/video/ffmpeg";
-import { getVideoTargetSize } from "@/lib/video/target";
 import type {
   VideoOptimizationResult,
   VideoProgress,
   VideoTrimRange,
 } from "@/types/video";
 
-function extensionForFile(file: File): string {
-  const lower = file.name.toLowerCase();
-  if (lower.endsWith(".mov") || file.type === "video/quicktime") return "mov";
-  return "mp4";
+function getApiBaseUrl(): string {
+  return (
+    process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ||
+    "http://localhost:8787"
+  );
 }
 
-function mapProgress(
-  ratio: number,
-  phase: VideoProgress["phase"],
-): VideoProgress {
-  const clamped = Math.max(0, Math.min(1, ratio));
-  let percent = 0;
-  if (phase === "loading_tools") percent = Math.round(clamped * 12);
-  else if (phase === "preparing") percent = 12 + Math.round(clamped * 8);
-  else if (phase === "optimizing") percent = 20 + Math.round(clamped * 70);
-  else percent = 90 + Math.round(clamped * 10);
-  return { phase, percent: Math.min(99, percent) };
-}
-
-/** True when FFmpeg probe logs list an audio stream. */
-export function ffmpegLogsIndicateAudio(logs: string[]): boolean {
-  return logs.some((line) => /Stream #\d+:\d+(?:\([^)]*\))?: Audio:/i.test(line));
-}
-
-export function buildVideoEncodeArgs(options: {
-  inputName: string;
-  outputName: string;
-  start: number;
-  duration: number;
-  width: number;
-  height: number;
-  hasAudio: boolean;
-}): string[] {
-  const scaleFilter = `scale=${options.width}:${options.height}:force_original_aspect_ratio=decrease,scale=trunc(iw/2)*2:trunc(ih/2)*2`;
-
-  const args = [
-    "-ss",
-    options.start.toFixed(3),
-    "-i",
-    options.inputName,
-    "-t",
-    options.duration.toFixed(3),
-    "-vf",
-    scaleFilter,
-    "-c:v",
-    "libx264",
-    "-preset",
-    VIDEO_PRESET,
-    "-crf",
-    String(VIDEO_CRF),
-  ];
-
-  if (options.hasAudio) {
-    args.push("-c:a", "aac");
-  } else {
-    args.push("-an");
-  }
-
-  args.push("-movflags", "+faststart", "-y", options.outputName);
-  return args;
+function mapUploadProgress(ratio: number): VideoProgress {
+  const percent = Math.min(35, Math.round(ratio * 35));
+  return { phase: "preparing", percent };
 }
 
 /**
- * Probe streams via `ffmpeg -i` logs (no output file).
- * Exit code is often non-zero when no output is set — that is expected.
+ * Upload trim range + file to the API; server runs native ffmpeg and returns MP4.
+ * Photos remain client-side — this path is video-only.
  */
-export async function detectHasAudioStream(
-  instance: FFmpeg,
-  inputName: string,
-): Promise<boolean> {
-  const lines: string[] = [];
-  const onLog: LogEventCallback = ({ message }) => {
-    lines.push(message);
-  };
-
-  instance.on("log", onLog);
-  try {
-    await instance.exec(["-i", inputName]);
-  } catch {
-    // Expected: -i with no output fails after printing stream info.
-  } finally {
-    instance.off("log", onLog);
-  }
-
-  return ffmpegLogsIndicateAudio(lines);
-}
-
 export async function processVideo(
   file: File,
   trim: VideoTrimRange,
@@ -110,109 +34,75 @@ export async function processVideo(
     throw new Error("DEVICE_LIMIT");
   }
 
-  const { width, height } = getVideoTargetSize(probe.width, probe.height);
-  const inputName = `input.${extensionForFile(file)}`;
-  const outputName = "output.mp4";
+  onProgress?.({ phase: "preparing", percent: 5 });
 
-  let instance: FFmpeg;
+  const form = new FormData();
+  form.append("file", file, file.name);
+  form.append("start", String(trim.start));
+  form.append("end", String(trim.end));
+
+  onProgress?.(mapUploadProgress(0.5));
+
+  let response: Response;
   try {
-    instance = await getFFmpeg((stage) => {
-      if (stage === "loading") {
-        onProgress?.(mapProgress(0.4, "loading_tools"));
-      }
-      if (stage === "ready") {
-        onProgress?.(mapProgress(1, "loading_tools"));
-      }
+    response = await fetch(`${getApiBaseUrl()}/v1/video/optimize`, {
+      method: "POST",
+      body: form,
     });
-  } catch {
+  } catch (error) {
+    console.error("[video] API unreachable", error);
+    throw new Error("API_UNAVAILABLE");
+  }
+
+  onProgress?.({ phase: "optimizing", percent: 55 });
+
+  if (!response.ok) {
+    let code = "ENCODE_FAILED";
+    try {
+      const json = (await response.json()) as { error?: string; message?: string };
+      if (json.error) code = json.error;
+      if (json.error === "FILE_TOO_LARGE") throw new Error("FILE_TOO_LARGE");
+      if (json.error === "UNSUPPORTED_TYPE") throw new Error("UNSUPPORTED_TYPE");
+    } catch (error) {
+      if (error instanceof Error && error.message === "FILE_TOO_LARGE") throw error;
+      if (error instanceof Error && error.message === "UNSUPPORTED_TYPE") throw error;
+    }
+    console.error("[video] optimize failed", response.status, code);
     throw new Error("DEVICE_LIMIT");
   }
 
-  onProgress?.(mapProgress(0, "preparing"));
+  onProgress?.({ phase: "finishing", percent: 90 });
 
-  const { fetchFile } = await import("@ffmpeg/util");
-  const inputData = await fetchFile(file);
-  await instance.writeFile(inputName, inputData);
+  const blob = await response.blob();
+  const width = Number(response.headers.get("X-Video-Width")) || probe.width;
+  const height = Number(response.headers.get("X-Video-Height")) || probe.height;
+  const outDuration =
+    Number(response.headers.get("X-Video-Duration")) || duration;
 
-  const hasAudio = await detectHasAudioStream(instance, inputName);
-  onProgress?.(mapProgress(1, "preparing"));
+  onProgress?.({ phase: "finishing", percent: 100 });
 
-  const onFfmpegProgress: ProgressEventCallback = ({ progress }) => {
-    onProgress?.(mapProgress(progress, "optimizing"));
-  };
-  instance.on("progress", onFfmpegProgress);
-
-  try {
-    onProgress?.(mapProgress(0, "optimizing"));
-
-    const args = buildVideoEncodeArgs({
-      inputName,
-      outputName,
-      start: trim.start,
-      duration,
+  return {
+    original: {
+      name: file.name,
+      type: file.type || "video/mp4",
+      size: file.size,
+      width: probe.width,
+      height: probe.height,
+      duration: probe.duration,
+    },
+    optimized: {
+      name: OPTIMIZED_VIDEO_FILENAME,
+      type: "video/mp4",
+      size: blob.size,
       width,
       height,
-      hasAudio,
-    });
-
-    const code = await instance.exec(args);
-    if (code !== 0) {
-      throw new Error("DEVICE_LIMIT");
-    }
-
-    onProgress?.(mapProgress(0.5, "finishing"));
-    const data = await instance.readFile(outputName);
-    const bytes =
-      data instanceof Uint8Array ? data : new TextEncoder().encode(String(data));
-    const copy = new Uint8Array(bytes);
-    const blob = new Blob([copy], { type: "video/mp4" });
-
-    onProgress?.({ phase: "finishing", percent: 100 });
-
-    return {
-      original: {
-        name: file.name,
-        type: file.type || "video/mp4",
-        size: file.size,
-        width: probe.width,
-        height: probe.height,
-        duration: probe.duration,
-      },
-      optimized: {
-        name: OPTIMIZED_VIDEO_FILENAME,
-        type: "video/mp4",
-        size: blob.size,
-        width,
-        height,
-        duration,
-      },
-      originalUrl: URL.createObjectURL(file),
-      optimizedUrl: URL.createObjectURL(blob),
-      optimizedBlob: blob,
-      trim: { start: trim.start, end: trim.end },
-    };
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "";
-    if (
-      message === "DEVICE_LIMIT" ||
-      /memory|wasm|allocate|quota|ffmpeg/i.test(message)
-    ) {
-      throw new Error("DEVICE_LIMIT");
-    }
-    throw error;
-  } finally {
-    instance.off("progress", onFfmpegProgress);
-    try {
-      await instance.deleteFile(inputName);
-    } catch {
-      /* ignore */
-    }
-    try {
-      await instance.deleteFile(outputName);
-    } catch {
-      /* ignore */
-    }
-  }
+      duration: outDuration,
+    },
+    originalUrl: URL.createObjectURL(file),
+    optimizedUrl: URL.createObjectURL(blob),
+    optimizedBlob: blob,
+    trim: { start: trim.start, end: trim.end },
+  };
 }
 
 export function revokeVideoResultUrls(result: VideoOptimizationResult | null) {

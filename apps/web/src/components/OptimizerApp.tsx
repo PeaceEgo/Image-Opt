@@ -123,7 +123,7 @@ export function OptimizerApp() {
 
     setError(null);
     setStatus("optimizing");
-    setVideoProgress({ phase: "loading_tools", percent: 0 });
+    setVideoProgress({ phase: "preparing", percent: 0 });
 
     try {
       const next = await processVideo(
@@ -192,7 +192,8 @@ export function OptimizerApp() {
               </p>
             ) : (
               <p className="mt-6 text-center text-sm text-muted">
-                No uploads. No accounts. Your media stays on your device.
+                No accounts. Photos stay on your device. Videos are processed
+                securely and not kept.
               </p>
             )}
           </section>
@@ -274,8 +275,9 @@ export function OptimizerApp() {
       </main>
 
       <footer className="px-5 py-6 text-center text-xs leading-relaxed text-muted sm:px-8">
-        Your media stays on your device. WhatsApp may still process your media —
-        this tool prepares files for WhatsApp Status before you post them.
+        Photos stay on your device. Videos are prepared on our server for speed,
+        then discarded — we do not keep your media. WhatsApp may still process
+        files after you post.
       </footer>
     </div>
   );

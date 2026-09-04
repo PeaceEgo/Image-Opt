@@ -3,6 +3,9 @@ node_modules
 *.log
 *.pem
 .env*
+.env
+.env.local
+.env.example
 .vercel
 dist
 .next

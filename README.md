@@ -1,28 +1,34 @@
 # WhatsApp Status Optimize
 
-Prepare photos for WhatsApp Status so they keep looking sharp after WhatsApp processes them.
+Prepare photos and videos for WhatsApp Status so they keep looking sharp after WhatsApp processes them.
 
-This does **not** prevent WhatsApp compression. It resizes and encodes images in the browser so they fit Status more cleanly.
+This does **not** prevent WhatsApp compression. It prepares Status-friendly media before you post.
 
-**Upload → WhatsApp HD → Share (or Download).**
+**Upload → WhatsApp-ready photo or video → Share (or Download).**
 
 ## Architecture
 
-Images and videos never leave the device. There is no database, auth, or media upload API.
-
 ```
-apps/web   Next.js app — Canvas photo HD + client FFmpeg video
-apps/api   Hono stub — health check only, not used by the media flow
+apps/web                   Next.js — photos optimized in the browser (Canvas)
+PeaceEgo/whatsapp-status-api   Separate repo — videos optimized with native ffmpeg
 ```
 
-Usage (visitors + events) is tracked with **Vercel Analytics**. Enable Web Analytics on the Vercel project, then open the Analytics tab for visitor counts and custom events (`hd_optimize`, `video_optimize`, `share_whatsapp`, `download`).
+- **Photos:** stay on the device (no upload).
+- **Videos:** sent to the video API, encoded, returned, not retained.
 
-## Develop
+Usage tracking: **Vercel Analytics** (`hd_optimize`, `video_optimize`, `share_whatsapp`, `download`).
+
+## Develop (web)
 
 ```bash
 npm install
-npm run dev          # web at http://localhost:3000
-npm run dev:api      # stub at http://localhost:8787
+npm run dev          # http://localhost:3000
+```
+
+For video, run the [whatsapp-status-api](https://github.com/PeaceEgo/whatsapp-status-api) locally and set `apps/web/.env.local`:
+
+```bash
+NEXT_PUBLIC_API_URL=http://localhost:8787
 ```
 
 ```bash
@@ -34,26 +40,13 @@ npm run build
 
 ## Privacy
 
-Processing is entirely client-side. The API stub must not receive user photos.
-
-## GitHub
-
-This project is a local git repo. Create the GitHub remote when `gh` is available:
-
-```bash
-git add .
-git commit -m "feat: scaffold status optimize MVP"
-gh repo create whatsapp-status-optimize --private --source=. --remote=origin --push
-```
+Photos never leave the browser. Videos are sent to the API solely to prepare a Status-ready file and are not retained after the response.
 
 ## Deploy
 
-Deploy `apps/web` to Vercel. Set the project **Root Directory** to `apps/web`.
-
-`apps/web/vercel.json` installs from the monorepo root so Linux native Tailwind/`lightningcss` binaries resolve on Vercel.
+- **Web:** Vercel with Root Directory `apps/web`. Set `NEXT_PUBLIC_API_URL` to your API origin.
+- **API:** Deploy the separate `whatsapp-status-api` repo (Railway / Render / Fly / VPS). Set `FRONTEND_ORIGIN` to your Vercel URL.
 
 ```bash
 npx vercel --cwd apps/web
 ```
-
-The API is a placeholder for later. It is not required for the MVP.

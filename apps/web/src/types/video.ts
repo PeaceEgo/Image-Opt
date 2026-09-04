@@ -21,11 +21,7 @@ export type VideoOptimizationResult = {
   trim: VideoTrimRange;
 };
 
-export type VideoProgressPhase =
-  | "loading_tools"
-  | "preparing"
-  | "optimizing"
-  | "finishing";
+export type VideoProgressPhase = "preparing" | "optimizing" | "finishing";
 
 export type VideoProgress = {
   phase: VideoProgressPhase;
