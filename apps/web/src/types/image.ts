@@ -16,7 +16,14 @@ export type OptimizationResult = {
   optimizedBlob: Blob;
 };
 
-export type AppStatus = "idle" | "reading" | "optimizing" | "complete" | "error";
+export type AppStatus =
+  | "idle"
+  | "reading"
+  | "optimizing"
+  | "video_trim"
+  | "complete"
+  | "error";
+
 
 export type FileLike = {
   name: string;

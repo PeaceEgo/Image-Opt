@@ -30,13 +30,16 @@ export function createOptimizedFile(
 }
 
 /**
- * Share the optimized image via the native share sheet when file sharing works.
+ * Share an optimized media file via the native share sheet when file sharing works.
  * Does not fake success. AbortError (user cancel) → cancelled.
  */
-export async function shareOptimizedImage(blob: Blob): Promise<ShareOutcome> {
+export async function shareOptimizedFile(
+  blob: Blob,
+  filename = OPTIMIZED_FILENAME,
+): Promise<ShareOutcome> {
   if (!canUseWebShare()) return "unsupported";
 
-  const file = createOptimizedFile(blob);
+  const file = createOptimizedFile(blob, filename);
 
   if (!canShareFiles(file)) {
     return "unsupported";
@@ -60,5 +63,13 @@ export async function shareOptimizedImage(blob: Blob): Promise<ShareOutcome> {
   }
 }
 
+/** @deprecated Prefer shareOptimizedFile — kept for call-site clarity on photos. */
+export async function shareOptimizedImage(blob: Blob): Promise<ShareOutcome> {
+  return shareOptimizedFile(blob, OPTIMIZED_FILENAME);
+}
+
 export const SHARE_UNSUPPORTED_MESSAGE =
   "Direct sharing isn't supported on this browser. Download your optimized image instead.";
+
+export const SHARE_UNSUPPORTED_VIDEO_MESSAGE =
+  "Direct sharing isn't supported on this browser. Download your optimized video instead.";

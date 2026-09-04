@@ -15,9 +15,9 @@ const fraunces = Fraunces({
 });
 
 export const metadata: Metadata = {
-  title: "Status Optimize — Photos for WhatsApp Status",
+  title: "Status Optimize — Photos & videos for WhatsApp Status",
   description:
-    "Prepare WhatsApp HD photos on your device, then share to WhatsApp. Processing stays private.",
+    "Make your photos & videos WhatsApp-ready without sacrificing unnecessary quality. Processing stays on your device.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // Next 16 defaults to Turbopack; empty config acknowledges browser-only FFmpeg WASM.
+  turbopack: {},
 };
 
 export default nextConfig;
