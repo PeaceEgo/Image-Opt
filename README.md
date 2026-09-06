@@ -1,59 +1,62 @@
 # WhatsApp Status Optimize
 
-Prepare photos for WhatsApp Status so they keep looking sharp after WhatsApp processes them.
+> Prepare photos and videos for WhatsApp Status so they stay sharper after WhatsApp processes them.
 
-This does **not** prevent WhatsApp compression. It resizes and encodes images in the browser so they fit Status more cleanly.
+WhatsApp Status Optimize is a web-based media optimization tool that prepares photos and videos before they are uploaded to WhatsApp Status.
 
-**Upload → WhatsApp HD → Share (or Download).**
+The application resizes and re-encodes media in the browser to provide files that are better suited for WhatsApp Status processing.
 
-## Architecture
+**Upload → Optimize → Share to WhatsApp or Download**
 
-Images and videos never leave the device. There is no database, auth, or media upload API.
+##  Features
 
-```
-apps/web   Next.js app — Canvas photo HD + client FFmpeg video
-apps/api   Hono stub — health check only, not used by the media flow
-```
+- Photo optimization for WhatsApp Status
+- Video optimization
+- WhatsApp HD image preparation
+-  Client-side media processing
+-  Responsive interface for desktop and mobile
+-  Share optimized media directly to WhatsApp when supported
+-  Download optimized media
+- Privacy-focused processing
+- Usage analytics
 
-Usage (visitors + events) is tracked with **Vercel Analytics**. Enable Web Analytics on the Vercel project, then open the Analytics tab for visitor counts and custom events (`hd_optimize`, `video_optimize`, `share_whatsapp`, `download`).
+##  Tech Stack
 
-## Develop
+### Frontend
 
-```bash
-npm install
-npm run dev          # web at http://localhost:3000
-npm run dev:api      # stub at http://localhost:8787
-```
+- Next.js
+- TypeScript
+- React
+- Tailwind CSS
 
-```bash
-npm test
-npm run lint
-npm run typecheck
-npm run build
-```
+### Media Processing
 
-## Privacy
+- HTML Canvas API for image processing
+- FFmpeg for browser-based video processing
 
-Processing is entirely client-side. The API stub must not receive user photos.
+### Analytics
 
-## GitHub
+- Vercel Analytics
 
-This project is a local git repo. Create the GitHub remote when `gh` is available:
+### Deployment
 
-```bash
-git add .
-git commit -m "feat: scaffold status optimize MVP"
-gh repo create whatsapp-status-optimize --private --source=. --remote=origin --push
-```
+- Vercel
 
-## Deploy
+##  Architecture
 
-Deploy `apps/web` to Vercel. Set the project **Root Directory** to `apps/web`.
+Media processing is handled entirely in the browser.
 
-`apps/web/vercel.json` installs from the monorepo root so Linux native Tailwind/`lightningcss` binaries resolve on Vercel.
+User photos and videos are **never uploaded to a backend server**.
 
-```bash
-npx vercel --cwd apps/web
-```
-
-The API is a placeholder for later. It is not required for the MVP.
+```text
+User
+  │
+  ▼
+Next.js Web App
+  │
+  ├── Photos ──► Canvas API ──► Optimized Image
+  │
+  └── Videos ──► FFmpeg ──► Optimized Video
+                         │
+                         ▼
+                 Share / Download
