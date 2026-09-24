@@ -6,17 +6,62 @@ This does **not** prevent WhatsApp compression. It prepares Status-friendly medi
 
 **Upload → WhatsApp-ready photo or video → Share (or Download).**
 
+## Features
+
+- Photo optimization for WhatsApp Status
+- Video optimization
+- WhatsApp HD image preparation
+- Responsive interface for desktop and mobile
+- Share optimized media directly to WhatsApp when supported
+- Download optimized media
+- Privacy-focused processing
+- Usage analytics
+
+## Tech Stack
+
+### Frontend
+
+- Next.js
+- TypeScript
+- React
+- Tailwind CSS
+
+### Media Processing
+
+- HTML Canvas API for image processing (in the browser)
+- Native FFmpeg for video processing (separate API)
+
+### Analytics
+
+- Vercel Analytics (`hd_optimize`, `video_optimize`, `share_whatsapp`, `download`)
+
+### Deployment
+
+- Web: Vercel
+- Video API: separate [whatsapp-status-api](https://github.com/PeaceEgo/whatsapp-status-api) repo
+
 ## Architecture
 
-```
-apps/web                   Next.js — photos optimized in the browser (Canvas)
-PeaceEgo/whatsapp-status-api   Separate repo — videos optimized with native ffmpeg
+Photos stay on the device. Videos are sent to the video API, encoded, returned, and not retained.
+
+```text
+User
+  │
+  ▼
+Next.js Web App
+  │
+  ├── Photos ──► Canvas API ──► Optimized Image
+  │
+  └── Videos ──► whatsapp-status-api (ffmpeg) ──► Optimized Video
+                         │
+                         ▼
+                 Share / Download
 ```
 
-- **Photos:** stay on the device (no upload).
-- **Videos:** sent to the video API, encoded, returned, not retained.
-
-Usage tracking: **Vercel Analytics** (`hd_optimize`, `video_optimize`, `share_whatsapp`, `download`).
+```text
+apps/web                        Next.js — photos optimized in the browser (Canvas)
+PeaceEgo/whatsapp-status-api    Separate repo — videos optimized with native ffmpeg
+```
 
 ## Develop (web)
 
