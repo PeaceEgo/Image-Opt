@@ -1,18 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
-
 import { ImageComparison } from "@/components/image/ImageComparison";
 import { Button } from "@/components/ui/button";
 import { trackEvent } from "@/lib/analytics";
 import { downloadOptimizedImage } from "@/lib/image/download";
 import {
   SHARE_UNSUPPORTED_MESSAGE,
-  canShareFiles,
-  canUseWebShare,
-  createOptimizedFile,
-  shareOptimizedImage,
 } from "@/lib/image/share";
+import { useAutoShare } from "@/lib/image/useAutoShare";
 import type { OptimizationResult } from "@/types/image";
 
 type OptimizationResultProps = {
@@ -21,32 +16,10 @@ type OptimizationResultProps = {
 };
 
 export function OptimizationResultView({ result, onReset }: OptimizationResultProps) {
-  const [shareMessage, setShareMessage] = useState<string | null>(null);
-  const [sharing, setSharing] = useState(false);
-
-  const optimizedFile = useMemo(
-    () => createOptimizedFile(result.optimizedBlob),
-    [result.optimizedBlob],
-  );
-  const shareReady = canUseWebShare() && canShareFiles(optimizedFile);
-
-  async function handleShare() {
-    setShareMessage(null);
-    setSharing(true);
-    try {
-      const outcome = await shareOptimizedImage(result.optimizedBlob);
-      if (outcome === "shared") {
-        trackEvent("share_whatsapp");
-        return;
-      }
-      if (outcome === "cancelled") {
-        return;
-      }
-      setShareMessage(SHARE_UNSUPPORTED_MESSAGE);
-    } finally {
-      setSharing(false);
-    }
-  }
+  const { shareReady, sharing, shareMessage, share } = useAutoShare({
+    blob: result.optimizedBlob,
+    unsupportedMessage: SHARE_UNSUPPORTED_MESSAGE,
+  });
 
   function handleDownload() {
     trackEvent("download");
@@ -60,6 +33,13 @@ export function OptimizationResultView({ result, onReset }: OptimizationResultPr
         <h2 className="mt-2 font-display text-3xl text-foreground sm:text-4xl">
           Your image is ready for WhatsApp.
         </h2>
+        {shareReady ? (
+          <p className="mt-3 text-sm text-muted">
+            {sharing
+              ? "Opening share…"
+              : "Share sheet opens automatically when your browser allows it."}
+          </p>
+        ) : null}
       </div>
 
       <ImageComparison result={result} />
@@ -70,7 +50,7 @@ export function OptimizationResultView({ result, onReset }: OptimizationResultPr
             size="lg"
             className="w-full sm:w-auto sm:min-w-[16rem]"
             disabled={sharing}
-            onClick={handleShare}
+            onClick={() => void share()}
           >
             {sharing ? "Opening share…" : "Share to WhatsApp"}
           </Button>
@@ -86,13 +66,13 @@ export function OptimizationResultView({ result, onReset }: OptimizationResultPr
         </Button>
 
         {!shareReady ? (
-          <p className="max-w-sm text-center text-sm text-muted" role="status">
+          <p className="max-w-sm self-center text-center text-sm text-muted" role="status">
             {SHARE_UNSUPPORTED_MESSAGE}
           </p>
         ) : null}
 
         {shareMessage ? (
-          <p className="max-w-sm text-center text-sm text-accent" role="status">
+          <p className="max-w-sm self-center text-center text-sm text-accent" role="status">
             {shareMessage}
           </p>
         ) : null}
