@@ -190,12 +190,7 @@ export function OptimizerApp() {
               <p className="mt-4 text-center text-sm text-accent" role="alert">
                 {error}
               </p>
-            ) : (
-              <p className="mt-6 text-center text-sm text-muted">
-                No accounts. Photos stay on your device. Videos are processed
-                securely and not kept.
-              </p>
-            )}
+            ) : null}
           </section>
         ) : null}
 
